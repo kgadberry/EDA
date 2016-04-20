@@ -1,0 +1,106 @@
+---
+title: "Diamond Exercises"
+author: "Kathryn Gadberry"
+date: "April 16, 2016"
+output: html_document
+---
+
+# Exploratory Data Analysis
+First, I need to set-up my workspace. 
+```{r}
+suppressMessages(library(dplyr))
+suppressMessages(library(tidyr))
+suppressMessages(library(ggplot2))
+suppressMessages(library("datasets"))
+diamonds <- data.frame(diamonds)
+```
+
+This set contains prices and attributes of almost 54,000 diamonds. Most of the ten variables listed below are straight forward. Clarification is needed for variable x (length in mm), variable y (width in mm), and variable z (depth in mm).
+```{r}
+names(diamonds)
+glimpse(diamonds)
+```
+
+
+## Part I: Boxplots
+I wanted to investigate the price per carat of diamonds across
+the different colors of diamonds using boxplots. An intial look at this data, using the boxplot function, might look something like this:
+```{r}
+boxplot(price~carat, data = diamonds, main = 'Diamond Price per Carat', xlab = 'Carats', ylab = 'Price')
+```
+
+To clean up this data and add the third variable (color), I need to create a variable dividing price by carat.
+```{r}
+diamonds$price_per_carat <- diamonds$price/diamonds$carat
+head(diamonds$price_per_carat)
+```
+
+Now, I can plot the Price Per Carat in comparison to the color of each diamond. I customized the color scale to define each of the seven diamond color levels: D, E, F, G, H, I, J. These individual boxplots show us the range, average(median), as well as the first and third quartile average price for each color diamond.
+```{r}
+boxplot(diamonds$price_per_carat ~ diamonds$color, main = "Diamond Price Per Carat by Color", xlab = "Color", ylab = "Price Per Carat", col = c('red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink'))
+```
+
+### Investigating using ggplot syntax
+
+When adding the ggplot function, I assinged the line of code to the object gp. Then, I'm able to add more commands and explore different ways to manipulate and visualize the data using the same base. This chart gives us more insight into the differences in  the average price per carat over the seven different colors. On average, the J colored diamonds are the most expensive, but have a higher carat size compared to  the E colored diamonds, which are the smallest size and least expensive out of the group. 
+```{r}
+gp <- ggplot(diamonds, aes(carat, price))
+gp + geom_boxplot(aes(color = color), alpha = 1/20)+
+  facet_wrap(~color, ncol = 7)+
+  scale_y_log10(name = 'Price', breaks = seq(0, 8000, 1000))
+```
+
+## Part II: Scatterplots
+For the next section, I want to create a scatterplot of price vs. x (width) using the ggplot syntax. First, I need to learn a little more about variable x.
+```{r}
+summary(diamonds$x)
+qplot(x, price, data = diamonds)
+```
+
+Initially, I get a graph that looks something like the data above. The density of these data points doesn't allow us to determine much, except that there does seem to be a positive correlation between price and width. Using ggplot, I can set the scatterplot with the function 'geom_point', as well as, scale my x and y axis. 
+```{r}
+ggplot(diamonds, aes(x = x, y = price))+
+geom_point(shape = 1)+
+scale_x_continuous(breaks = seq(0, 12, 1))+
+scale_y_continuous(breaks = seq(0, 18000, 3000))
+```
+
+There are many differen't ways to analyze the data. See two differen't plots of the same price vs. x comparison below.
+```{r}
+gp1 <- ggplot(aes(x = x, y = price), data = diamonds)+
+  geom_point(alpha = 1/20)+
+  xlim(0, 12)+
+  coord_trans(y = 'sqrt')
+
+gp2 <- ggplot(aes(x = x, y = price), data = diamonds)+
+  geom_jitter(alpha = 1/20)+
+  xlim(0,12)
+  ylim(300, 15000)
+
+gp1
+gp2
+```
+
+###Correlation
+We can also look further into what the actual correlation is between price and width of the diamonds. the cor.test function shows us the correlation confidence interval is .88. Depending on the threshold, this could be evidence there there is a significant correlation between these two variables. 
+```{r}
+cor.test(diamonds$x, diamonds$price, method = "pearson")
+```
+
+## Part III: Histogram
+In this final section, I wanted to create a histogram of diamond prices and facet the histogram by diamond color. I used the diamond cut variable to color the histogram.
+
+```{r}
+ ggh <-  ggplot(data = diamonds, aes(diamonds$price)) + 
+     geom_histogram(col="red", 
+                    aes(fill = diamonds$cut))
+ggh
+```
+
+```{r}
+ ggh + facet_wrap(~color, ncol = 2)+
+xlim(300,15000)+
+ylim(0, 5000)
+```
+ 
+
